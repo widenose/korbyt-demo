@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sample Dashboard with Chart</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f4f5f7;
+      color: #333;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      grid-template-rows: 60px 1fr;
+      grid-template-areas:
+        "sidebar header"
+        "sidebar main";
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      grid-area: sidebar;
+      background: #1f2933;
+      color: #fff;
+      padding: 20px;
+    }
+
+    .sidebar h2 {
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+
+    .nav-section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      opacity: 0.6;
+      margin: 20px 0 8px;
+    }
+
+    .nav-link {
+      display: block;
+      padding: 8px 10px;
+      margin-bottom: 4px;
+      border-radius: 4px;
+      font-size: 14px;
+      text-decoration: none;
+      color: #e5e7eb;
+      cursor: pointer;
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      background: #374151;
+    }
+
+    .header {
+      grid-area: header;
+      background: #ffffff;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+    }
+
+    .header-title {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .user-pill {
+      background: #f3f4f6;
+      padding: 6px 10px;
+      border-radius: 999px;
+    }
+
+    .main {
+      grid-area: main;
+      padding: 20px;
+    }
+
+    .main-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .main-header h1 {
+      font-size: 22px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .card-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 900px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 8px 6px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+    }
+
+    .status-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+    }
+    .status-ok { background: #dcfce7; color: #166534; }
+    .status-warn { background: #fef9c3; color: #854d0e; }
+    .status-err { background: #fee2e2; color: #991b1b; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>Korbyt Demo</h2>
+      <div class="nav-section-title">Main</div>
+      <a class="nav-link active">Dashboard</a>
+      <a class="nav-link">Players</a>
+      <a class="nav-link">Content</a>
+      <a class="nav-link">Schedules</a>
+
+      <div class="nav-section-title">Settings</div>
+      <a class="nav-link">Users</a>
+      <a class="nav-link">System</a>
+    </aside>
+
+    <header class="header">
+      <div class="header-title">Sample Dashboard</div>
+      <div class="header-right">
+        <span>Last sync: 5 mins ago</span>
+        <span class="user-pill">Admin User</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="main-header">
+        <h1>Overview</h1>
+        <div class="date-range">Today · 9:00 AM – Now</div>
+      </div>
+
+      <section class="cards">
+        <div class="card">
+          <div class="card-title">Active Players</div>
+          <div class="card-value">128</div>
+          <div class="card-subtext">+6 since yesterday</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Screens Online</div>
+          <div class="card-value">117</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Content Items</div>
+          <div class="card-value">342</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Alerts</div>
+          <div class="card-value">5</div>
+        </div>
+      </section>
+
+      <section class="row">
+        <!-- Chart Card -->
+        <div class="card">
+          <div class="card-title">Playback Activity</div>
+          <canvas id="activityChart" height="250"></canvas>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Recent Player Status</div>
+          <table>
+            <tbody>
+              <tr><td>LS-435-01</td><td>Lobby</td><td><span class="status-pill status-ok">Online</span></td></tr>
+              <tr><td>LS-435-02</td><td>Cafeteria</td><td><span class="status-pill status-warn">Warning</span></td></tr>
+              <tr><td>LS-435-03</td><td>Conference 1</td><td><span class="status-pill status-ok">Online</span></td></tr>
+              <tr><td>LS-435-04</td><td>Warehouse</td><td><span class="status-pill status-err">Offline</span></td></tr>
+              <tr><td>LS-435-05</td><td>Reception</td><td><span class="status-pill status-ok">Online</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    // Sample chart data
+    const ctx = document.getElementById('activityChart');
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['9 AM', '10 AM', '11 AM', '12 PM', '1 PM', '2 PM', '3 PM'],
+        datasets: [{
+          label: 'Playback Events',
+          data: [12, 19, 15, 22, 18, 24, 30],
+          borderWidth: 2,
+          borderColor: 'rgba(54, 162, 235, 1)',
+          backgroundColor: 'rgba(54, 162, 235, 0.2)',
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
