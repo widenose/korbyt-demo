@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Korbyt – Meet Our Team</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{width:1920px;height:1080px;transform-origin:top left;transform:scale(calc(100vw/1920));overflow:hidden;}
+  body{width:1920px;height:1080px;overflow:hidden;font-family:'Arial',sans-serif;background:#ffffff;position:relative;color:#1a1a2e;}
+
+  /* Light warm background */
+  .bg{position:absolute;inset:0;background:linear-gradient(135deg,#f0f6ff 0%,#ffffff 50%,#f5f0ff 100%);}
+  .bg::after{content:'';position:absolute;inset:0;background-image:radial-gradient(circle,rgba(8,79,148,0.07) 1.5px,transparent 1.5px);background-size:52px 52px;}
+
+  /* HEADER BANNER */
+  .header-banner{
+    position:absolute;top:0;left:0;right:0;height:140px;
+    background:linear-gradient(90deg,#084f94 0%,#042d54 60%,#8f278d 100%);
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 60px;
+    overflow:hidden;
+  }
+  /* Abstract lines in banner replacing field lines */
+  .header-geo{position:absolute;inset:0;pointer-events:none;opacity:0.08;}
+  .header-title{font-size:52px;font-weight:900;color:#fff;letter-spacing:1px;}
+
+  .accent-line{position:absolute;top:140px;left:0;right:0;height:5px;background:linear-gradient(90deg,#084f94,#25b5f5,#f9ec31,#eb008b,#084f94);background-size:200% 100%;animation:shimmer 3s linear infinite;}
+  @keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
+
+  /* MAIN CONTENT */
+  .content{position:absolute;top:145px;left:0;right:0;bottom:0;display:flex;align-items:center;}
+
+  /* Photo side */
+  .photo-area{
+    width:680px;height:100%;flex-shrink:0;
+    display:flex;align-items:flex-end;justify-content:center;
+    position:relative;
+  }
+  .photo-circle-bg{
+    position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+    width:460px;height:460px;border-radius:50%;
+    background:linear-gradient(135deg,rgba(8,79,148,0.08),rgba(37,181,245,0.12));
+    border:2px solid rgba(8,79,148,0.12);
+  }
+  .photo-area img{position:relative;z-index:2;height:820px;width:auto;object-fit:contain;object-position:bottom;animation:fadeUp 1s ease-out .3s both;}
+
+  .spotlight-badge{
+    position:absolute;top:30px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(90deg,#084f94,#25b5f5);
+    border-radius:50px;padding:10px 28px;
+    font-size:18px;font-weight:700;color:#fff;letter-spacing:1.5px;text-transform:uppercase;
+    white-space:nowrap;z-index:3;animation:fadeUp .8s ease-out .2s both;
+  }
+
+  /* Info side */
+  .info-area{flex:1;padding:50px 80px;display:flex;flex-direction:column;justify-content:center;}
+  .info-table{display:flex;flex-direction:column;gap:32px;}
+  .info-row{display:flex;align-items:baseline;gap:24px;animation:fadeUp .8s ease-out both;}
+  .info-label{font-size:16px;color:rgba(26,26,46,0.4);font-weight:700;letter-spacing:2px;text-transform:uppercase;width:160px;flex-shrink:0;}
+  .info-value{font-size:40px;font-weight:900;color:#1a1a2e;}
+  .info-value.large{font-size:52px;color:#084f94;}
+  .info-value.fun{font-size:26px;font-weight:400;color:rgba(26,26,46,0.75);line-height:1.5;}
+  .info-value.fun strong{font-weight:700;color:#1a1a2e;}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+  .bottom-bar{position:absolute;bottom:0;left:0;right:0;height:8px;background:linear-gradient(90deg,#084f94,#25b5f5,#f9ec31,#eb008b,#084f94);background-size:200% 100%;animation:shimmer2 3s linear infinite;}
+  @keyframes shimmer2{0%{background-position:0%}100%{background-position:200%}}
+</style>
+</head>
+<body>
+<div class="bg"></div>
+
+<div class="header-banner">
+  <!-- Abstract geometric lines replacing field lines -->
+  <svg class="header-geo" viewBox="0 0 1920 140" xmlns="http://www.w3.org/2000/svg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;opacity:0.1;">
+    <line x1="960" y1="0" x2="960" y2="140" stroke="white" stroke-width="1.5"/>
+    <circle cx="960" cy="70" r="45" fill="none" stroke="white" stroke-width="1.5"/>
+    <rect x="0" y="10" width="50" height="120" fill="none" stroke="white" stroke-width="1.5"/>
+    <rect x="1870" y="10" width="50" height="120" fill="none" stroke="white" stroke-width="1.5"/>
+  </svg>
+  <img src="https://raw.githubusercontent.com/widenose/korbyt-demo/refs/heads/main/AA-Light-Logo.png" alt="Korbyt" style="height:52px;width:auto;">
+  <div class="header-title">Meet Our Team!</div>
+  <div style="width:200px;"></div>
+</div>
+
+<div class="accent-line"></div>
+
+<div class="content">
+  <div class="photo-area">
+    <div class="photo-circle-bg"></div>
+    <div class="spotlight-badge">⭐ Team Spotlight</div>
+    <img src="https://static.vecteezy.com/system/resources/previews/059/913/527/non_2x/a-beautiful-african-american-woman-in-a-business-suit-holding-a-folder-free-png.png" alt="Nicole">
+  </div>
+
+  <div class="info-area">
+    <div class="info-table">
+      <div class="info-row" style="animation-delay:.35s"><div class="info-label">name:</div><div class="info-value">Nicole</div></div>
+      <div class="info-row" style="animation-delay:.45s"><div class="info-label">branch:</div><div class="info-value">Dallas, TX</div></div>
+      <div class="info-row" style="animation-delay:.55s"><div class="info-label">years with us:</div><div class="info-value large">4</div></div>
+      <div class="info-row" style="animation-delay:.65s">
+        <div class="info-label">fun fact:</div>
+        <div class="info-value fun">Nicole is a car enthusiast. She's also<br>really good with helping our customers<br>with their <strong>auto loans!</strong></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-bar"></div>
+</body>
+</html>
