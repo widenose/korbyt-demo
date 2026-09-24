@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#042d54">
+<title>Visitor badge</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+html, body { margin:0; padding:0; background:#042d54; min-height:100%; }
+body { font-family:'Sora','Segoe UI',Helvetica,Arial,sans-serif; color:#06203d; -webkit-font-smoothing:antialiased;
+  padding:calc(env(safe-area-inset-top, 0px) + 20px) 20px calc(env(safe-area-inset-bottom, 0px) + 24px); box-sizing:border-box; }
+* { box-sizing:border-box; }
+.vb-wrap { max-width:420px; margin:0 auto; }
+.vb-top { display:flex; align-items:center; justify-content:space-between; color:#fff; margin:6px 4px 18px; }
+.vb-logo { height:26px; }
+.vb-logo-text { font-weight:700; font-size:20px; display:none; }
+.vb-live { font-size:13px; font-weight:600; color:#9fdcf9; display:flex; align-items:center; }
+.vb-live-dot { width:9px; height:9px; border-radius:50%; background:#3ddc84; margin-right:8px; animation:vb-pulse 1.6s ease-out infinite; }
+@keyframes vb-pulse { 0% { box-shadow:0 0 0 0 rgba(61,220,132,0.6); } 80% { box-shadow:0 0 0 9px rgba(61,220,132,0); } 100% { box-shadow:0 0 0 0 rgba(61,220,132,0); } }
+.vb-card { position:relative; background:#fff; border-radius:26px; overflow:hidden; box-shadow:0 24px 60px rgba(0,0,0,0.35); }
+.vb-card::after { content:''; position:absolute; top:0; left:-60%; width:40%; height:100%; pointer-events:none;
+  background:linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.55) 50%, rgba(255,255,255,0) 100%); animation:vb-sheen 3.6s ease-in-out infinite; }
+@keyframes vb-sheen { 0% { left:-60%; } 60% { left:130%; } 100% { left:130%; } }
+.vb-head { background:#084f94; height:74px; position:relative; }
+.vb-hole { position:absolute; left:50%; top:20px; width:70px; height:14px; margin-left:-35px; border-radius:7px; background:#042d54; }
+.vb-body { padding:26px 26px 22px; text-align:center; }
+.vb-av { width:108px; height:108px; border-radius:50%; background:#dfe8f1; color:#084f94; font-size:40px; font-weight:700; display:flex; align-items:center; justify-content:center; margin:0 auto 16px; }
+.vb-name { font-size:30px; font-weight:700; letter-spacing:-0.8px; line-height:1.15; }
+.vb-co { font-size:17px; color:#4b6078; margin-top:6px; }
+.vb-rows { margin-top:22px; text-align:left; border-top:2px solid #eef3f8; }
+.vb-row { display:flex; justify-content:space-between; align-items:baseline; padding:12px 0; border-bottom:2px solid #eef3f8; font-size:15px; }
+.vb-k { color:#6b7f94; }
+.vb-v { font-weight:600; text-align:right; max-width:65%; }
+.vb-strip { background:#f9ec31; color:#042d54; display:flex; align-items:center; justify-content:space-between; padding:16px 26px; }
+.vb-word { font-size:34px; font-weight:700; letter-spacing:-1px; }
+.vb-clock { text-align:right; font-weight:600; font-size:13px; line-height:1.35; }
+.vb-clock b { font-size:18px; display:block; font-variant-numeric:tabular-nums; }
+.vb-note { color:rgba(255,255,255,0.7); font-size:13px; line-height:1.55; text-align:center; margin:18px 10px 0; }
+.vb-tip { margin:16px 4px 0; padding:14px 16px; border-radius:16px; background:rgba(255,255,255,0.08); color:rgba(255,255,255,0.85); font-size:13px; line-height:1.5; }
+.vb-expired .vb-strip { background:#d6e0ea; }
+.vb-expired .vb-card::after { display:none; }
+.vb-expired .vb-live-dot { background:#ff6b6b; animation:none; }
+.vb-bad { color:#fff; text-align:center; padding:80px 20px; font-size:18px; line-height:1.5; }
+@media (prefers-reduced-motion: reduce) { .vb-card::after, .vb-live-dot { animation:none; } }
+</style>
+</head>
+<body>
+<div class="vb-wrap" id="vb"></div>
+<script>
+var VB_CONFIG = {
+  LOGO_LIGHT: 'https://widenose.github.io/korbyt-demo/AA-Light-Logo.png'
+};
+(function () {
+  var C = VB_CONFIG, box = document.getElementById('vb'), APOS = String.fromCharCode(39);
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function param() {
+    var out = {}, h = (window.location.hash || '').replace(/^#/, ''), parts = h ? h.split('&') : [], i, kv;
+    for (i = 0; i < parts.length; i++) { kv = parts[i].split('='); if (kv[0]) { try { out[kv[0]] = decodeURIComponent(kv.slice(1).join('=')); } catch (e) { out[kv[0]] = ''; } } }
+    return out;
+  }
+  function parseUtc(v) {
+    if (!v) { return null; }
+    var y = parseInt(v.substr(0, 4), 10), mo = parseInt(v.substr(5, 2), 10), d = parseInt(v.substr(8, 2), 10), h = parseInt(v.substr(11, 2), 10), mi = parseInt(v.substr(14, 2), 10);
+    if (isNaN(y) || isNaN(h)) { return null; }
+    return new Date(Date.UTC(y, mo - 1, d, h, isNaN(mi) ? 0 : mi, 0));
+  }
+  function fmtTime(d) { var h = d.getHours(), m = d.getMinutes(), ap = h >= 12 ? 'PM' : 'AM'; h = h % 12 || 12; return h + ':' + (m < 10 ? '0' : '') + m + ' ' + ap; }
+  function fmtClock(d) { var s = d.getSeconds(); return fmtTime(d).replace(' ', ':' + (s < 10 ? '0' : '') + s + ' '); }
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function fmtDate(d) { return MONTHS[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear(); }
+  function sameDay(a, b) { return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate(); }
+
+  var P = param(), at = parseUtc(P.t);
+  if (!P.n || !at) { box.innerHTML = '<div class="vb-bad">This badge link isn' + APOS + 't complete.<br>Please scan the code on the check-in screen again.</div>'; return; }
+  var names = P.n.split(' '), ini = ((names[0] || '').charAt(0) + (names.length > 1 ? names[names.length - 1].charAt(0) : '')).toUpperCase();
+  var meetAt = parseUtc(P.mt), valid = sameDay(at, new Date());
+  if (!valid) { document.body.className = 'vb-expired'; }
+  var rows = '';
+  function row(k, v) { if (v) { rows += '<div class="vb-row"><span class="vb-k">' + esc(k) + '</span><span class="vb-v">' + esc(v) + '</span></div>'; } }
+  row('Visiting', P.h); row('Meeting', P.m); row('Room', P.r); if (meetAt) { row('Meeting time', fmtTime(meetAt)); }
+  row('Location', P.p); row('Checked in', fmtTime(at) + ', ' + fmtDate(at)); if (P.v) { row('Visit ID', P.v.toUpperCase()); }
+  box.innerHTML =
+    '<div class="vb-top"><img class="vb-logo" id="vb-logo" src="' + esc(C.LOGO_LIGHT) + '" alt="' + esc(P.o || '') + '"><span class="vb-logo-text" id="vb-logo-text">' + esc(P.o || '') + '</span>' +
+      '<span class="vb-live"><span class="vb-live-dot"></span>' + (valid ? 'Valid today' : 'Expired') + '</span></div>' +
+    '<div class="vb-card"><div class="vb-head"><div class="vb-hole"></div></div>' +
+      '<div class="vb-body"><div class="vb-av">' + esc(ini) + '</div><div class="vb-name">' + esc(P.n) + '</div>' + (P.c ? '<div class="vb-co">' + esc(P.c) + '</div>' : '') +
+      '<div class="vb-rows">' + rows + '</div></div>' +
+      '<div class="vb-strip"><div class="vb-word">Visitor</div><div class="vb-clock">' + (valid ? 'Live' : 'Issued') + '<b id="vb-clock"></b></div></div></div>' +
+    '<div class="vb-note">' + (valid ? 'Show this badge if you' + APOS + 're asked. The clock and the moving shine show it' + APOS + 's live, not a screenshot.' : 'This badge was for ' + esc(fmtDate(at)) + '. Please check in again at the front desk.') + '</div>' +
+    '<div class="vb-tip">Tip: on iPhone, tap Share, then Add to Home Screen to keep your badge handy today.</div>';
+  var lg = document.getElementById('vb-logo');
+  lg.onerror = function () { lg.style.display = 'none'; document.getElementById('vb-logo-text').style.display = 'inline'; };
+  function tick() { document.getElementById('vb-clock').innerHTML = valid ? fmtClock(new Date()) : esc(fmtDate(at)); }
+  tick(); if (valid) { setInterval(tick, 1000); }
+  document.title = P.n + ' - Visitor badge';
+}());
+</script>
+</body>
+</html>
