@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#042d54">
+<title>Directions</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+html, body { margin:0; padding:0; background:#eef3f8; }
+body { font-family:'Sora','Segoe UI',Helvetica,Arial,sans-serif; color:#06203d; -webkit-font-smoothing:antialiased; }
+* { box-sizing:border-box; }
+.top { background:#042d54; color:#fff; padding:calc(env(safe-area-inset-top, 0px) + 18px) 20px 20px; }
+.brand { display:flex; align-items:center; justify-content:space-between; }
+.brand img { height:24px; }
+.brand span { font-size:13px; color:rgba(255,255,255,0.7); }
+.k { font-size:14px; font-weight:600; color:#7fd3fa; margin-top:18px; }
+.dest { font-size:32px; font-weight:700; letter-spacing:-0.8px; line-height:1.1; margin-top:4px; }
+.meta { font-size:15px; color:rgba(255,255,255,0.8); margin-top:8px; }
+.mapwrap { padding:14px; }
+.map { position:relative; width:100%; background:#fff; border-radius:18px; overflow:hidden; box-shadow:0 10px 30px rgba(4,45,84,0.12); }
+.mapin { position:relative; width:100%; }
+.mapin img { display:block; width:100%; height:auto; }
+.mapin svg { position:absolute; left:0; top:0; width:100%; height:100%; overflow:visible; }
+.map.full { position:fixed; left:0; top:0; width:100vw; height:100vh; z-index:50; border-radius:0; background:#042d54; display:flex; align-items:center; justify-content:center; box-shadow:none; padding-bottom:76px; box-sizing:border-box; }
+.map.full .mapin { flex:0 0 auto; background:#fff; border-radius:10px; overflow:hidden; }
+.fullbar { display:none; position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom, 0px) + 16px); z-index:51; justify-content:center; gap:12px; }
+.fullbar.on { display:flex; }
+.fb-btn { height:48px; padding:0 26px; border:0; border-radius:999px; background:rgba(255,255,255,0.16); color:#fff; font-family:inherit; font-size:16px; font-weight:700; -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+.fb-close { background:#ffffff; color:#042d54; }
+.flow { animation:flow 0.9s linear infinite; }
+@keyframes flow { from { stroke-dashoffset:96; } to { stroke-dashoffset:0; } }
+.actions { display:flex; gap:10px; padding:0 14px; }
+.btn { flex:1; height:50px; border:0; border-radius:999px; font-family:inherit; font-size:16px; font-weight:700; cursor:pointer; }
+.btn-p { background:#042d54; color:#fff; }
+.btn-s { background:#fff; color:#06203d; box-shadow:inset 0 0 0 2px #d6e0ea; }
+.steps { margin:16px 14px calc(env(safe-area-inset-bottom, 0px) + 24px); background:#fff; border-radius:18px; padding:6px 18px; box-shadow:0 10px 30px rgba(4,45,84,0.08); }
+.step { display:flex; align-items:center; padding:14px 0; border-bottom:1px solid #eef3f8; font-size:16px; line-height:1.35; }
+.step:last-child { border-bottom:0; }
+.ico { width:38px; height:38px; flex:0 0 auto; border-radius:50%; background:#eef3f8; display:flex; align-items:center; justify-content:center; margin-right:14px; }
+.ico svg { width:22px; height:22px; }
+.step b { font-weight:700; }
+.dim { color:#6b7f94; font-size:14px; }
+.msg { padding:60px 24px; text-align:center; color:#4b6078; font-size:17px; line-height:1.5; }
+@media (orientation: landscape) and (min-width: 700px) {
+  .wrap { display:flex; } .left { flex:1 1 62%; } .right { flex:1 1 38%; }
+  .steps { margin-top:14px; }
+}
+@media (prefers-reduced-motion: reduce) { .flow { animation:none; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand"><img id="logo" alt=""><span id="site"></span></div>
+  <div class="k">Directions to</div>
+  <div class="dest" id="dest">Loading</div>
+  <div class="meta" id="meta"></div>
+</div>
+<div class="wrap">
+  <div class="left">
+    <div class="mapwrap"><div class="map" id="map"><div class="mapin" id="mapin"><div class="msg" id="msg">Loading the floor plan...</div></div></div></div>
+    <div class="actions"><button class="btn btn-p" id="replay">Replay route</button><button class="btn btn-s" id="zoom">Full-size map</button></div>
+    <div class="fullbar" id="fullbar"><button class="fb-btn" id="fb-replay">Replay</button><button class="fb-btn fb-close" id="fb-close">Close</button></div>
+  </div>
+  <div class="right"><div class="steps" id="steps"></div></div>
+</div>
+<script>
+var WF_PAGE = {
+  SVG_URL: 'https://widenose.github.io/korbyt-demo/Floor-Plan-Wayfinding.svg',
+  LOGO_URL: 'https://widenose.github.io/korbyt-demo/AA-Light-Logo.png',
+  METERS_PER_UNIT: 0.0065, WALK_METERS_PER_MIN: 75,
+  UNITS: 'ft'                       /* 'ft' or 'm'; a kiosk link can override with &u=ft or &u=m */
+};
+(function () {
+  var C = WF_PAGE, SVGNS = 'http://www.w3.org/2000/svg', XL = 'http://www.w3.org/1999/xlink';
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function params() { var o = {}, h = (location.hash || '').replace(/^#/, '').split('&'), i, kv; for (i = 0; i < h.length; i++) { kv = h[i].split('='); if (kv[0]) { try { o[kv[0]] = decodeURIComponent(kv.slice(1).join('=')); } catch (e) {} } } return o; }
+  var P = params();
+  if (P.svg) { C.SVG_URL = P.svg; }
+  if (P.u === 'm' || P.u === 'ft') { C.UNITS = P.u; }
+  function fmtLen(meters) { return C.UNITS === 'm' ? Math.max(1, Math.round(meters)) + ' m' : Math.max(3, Math.round(meters * 3.28084)) + ' ft'; }
+  $('logo').src = C.LOGO_URL; $('logo').onerror = function () { this.style.display = 'none'; };
+  $('site').innerHTML = esc(P.site || '');
+  $('dest').innerHTML = esc(P.to || 'Unknown destination');
+  function fail(m) { $('mapin').innerHTML = '<div class="msg">' + m + '</div>'; }
+  if (!P.to) { fail('This link is missing its destination. Please scan the code on the screen again.'); return; }
+
+  /* ---------- geometry helpers ---------- */
+  function norm(t) { return String(t || '').toLowerCase().replace(/training/g, '').replace(/combo/g, '').replace(/[^a-z0-9]/g, ''); }
+  function dist(a, b) { var dx = a[0] - b[0], dy = a[1] - b[1]; return Math.sqrt(dx * dx + dy * dy); }
+  function proj(p, a, b) { var dx = b[0] - a[0], dy = b[1] - a[1], L2 = dx * dx + dy * dy, t = L2 ? ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L2 : 0; t = Math.max(0, Math.min(1, t)); var q = [a[0] + t * dx, a[1] + t * dy]; return { t: t, q: q, d: dist(p, q) }; }
+  function inter(a, b, c, d) {
+    var x1 = a[0], y1 = a[1], x2 = b[0], y2 = b[1], x3 = c[0], y3 = c[1], x4 = d[0], y4 = d[1], den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+    if (Math.abs(den) < 1e-9) { return null; }
+    var t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / den, u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / den;
+    if (t >= -0.02 && t <= 1.02 && u >= -0.02 && u <= 1.02) { return { p: [x1 + t * (x2 - x1), y1 + t * (y2 - y1)], t: Math.max(0, Math.min(1, t)), u: Math.max(0, Math.min(1, u)) }; }
+    return null;
+  }
+  /* thin shape (4 corners) -> centerline between the midpoints of its two short edges */
+  function centerline(pts) {
+    var e = [], i; for (i = 0; i < 4; i++) { var a = pts[i], b = pts[(i + 1) % 4]; e.push({ m: [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], L: dist(a, b) }); }
+    e.sort(function (x, y) { return x.L - y.L; }); return [e[0].m, e[1].m];
+  }
+  function pathCorners(d) {
+    var toks = d.match(/[MLlHhVvZz]|-?\d*\.?\d+(?:e-?\d+)?/g) || [], pts = [], x = 0, y = 0, cmd = '', i = 0, t;
+    while (i < toks.length) {
+      t = toks[i];
+      if (/^[MLlHhVvZz]$/.test(t)) { cmd = t; i++; continue; }
+      if (cmd === 'M' || cmd === 'L') { x = +toks[i]; y = +toks[i + 1]; i += 2; }
+      else if (cmd === 'l') { x += +toks[i]; y += +toks[i + 1]; i += 2; }
+      else if (cmd === 'h') { x += +toks[i]; i++; } else if (cmd === 'v') { y += +toks[i]; i++; } else { i++; continue; }
+      pts.push([x, y]);
+    }
+    return pts.slice(0, 4);
+  }
+  function label(el) { return el.getAttributeNS('http://www.serif.com/', 'id') || el.getAttribute('serif:id') || el.getAttribute('id') || ''; }
+
+  /* ---------- load the hosted SVG ---------- */
+  var x = new XMLHttpRequest(); x.open('GET', C.SVG_URL);
+  x.onload = function () { if (x.status !== 200) { fail('The floor plan couldn' + String.fromCharCode(39) + 't be loaded.'); return; } try { build(x.responseText); } catch (e) { fail('The floor plan couldn' + String.fromCharCode(39) + 't be read.'); if (window.console) { console.log(e); } } };
+  x.onerror = function () { fail('Check your connection and scan the code again.'); };
+  x.send();
+
+  var segs = [], marks = {}, yah = null, W = 6400, H = 4267, route = null, svg = null;
+  function build(text) {
+    var doc = new DOMParser().parseFromString(text, 'image/svg+xml'), root = doc.documentElement, vb = (root.getAttribute('viewBox') || '0 0 6400 4267').split(/[\s,]+/);
+    W = +vb[2]; H = +vb[3];
+    /* the floor plan is the image used by the Floorplan layer */
+    var fp = doc.getElementById('Floorplan'), href = fp ? (fp.getAttribute('xlink:href') || fp.getAttributeNS(XL, 'href')) : null, imgEl = href ? doc.getElementById(href.replace('#', '')) : null;
+    var src = imgEl ? (imgEl.getAttribute('xlink:href') || imgEl.getAttributeNS(XL, 'href')) : null;
+    var paths = root.querySelectorAll('path, rect'), i, el, nm;
+    for (i = 0; i < paths.length; i++) {
+      el = paths[i]; nm = label(el); if (!/^path/i.test(nm)) { continue; }
+      if (el.tagName.toLowerCase() === 'rect') { var rx = +el.getAttribute('x'), ry = +el.getAttribute('y'), rw = +el.getAttribute('width'), rh = +el.getAttribute('height'); segs.push(centerline([[rx, ry], [rx + rw, ry], [rx + rw, ry + rh], [rx, ry + rh]])); }
+      else { var c4 = pathCorners(el.getAttribute('d')); if (c4.length === 4) { segs.push(centerline(c4)); } }
+    }
+    var circ = root.querySelectorAll('circle'); for (i = 0; i < circ.length; i++) { marks[norm(label(circ[i]))] = [+circ[i].getAttribute('cx'), +circ[i].getAttribute('cy')]; }
+    var y0 = doc.getElementById('You-Are-Here'); if (y0) { yah = [+y0.getAttribute('cx'), +y0.getAttribute('cy')]; }
+    if (P.from) { var f = P.from.split(','); if (f.length === 2 && !isNaN(+f[0])) { yah = [+f[0], +f[1]]; } }
+    var dest = marks[norm(P.to)] || marks[norm(P.key)];
+    if (!src || !segs.length || !yah) { fail('This floor plan doesn' + String.fromCharCode(39) + 't have wayfinding layers.'); return; }
+    if (!dest) { fail('No route was found to ' + esc(P.to) + '.'); return; }
+    route = solve(yah, dest);
+    if (!route) { fail('No route was found to ' + esc(P.to) + '.'); return; }
+    $('mapin').innerHTML = '<img alt="Floor plan">'; $('mapin').firstChild.src = src;
+    draw(); steps();
+  }
+
+  /* ---------- shortest route (same method as the kiosk) ---------- */
+  function solve(start, end) {
+    var nodes = [], adj = {}, cuts = [], i, j, r, TOL = 30, joins = [];
+    function node(p) { for (var k = 0; k < nodes.length; k++) { if (dist(p, nodes[k]) <= 6) { return k; } } nodes.push(p); return nodes.length - 1; }
+    function edge(a, b, w) { if (a === b) { return; } (adj[a] = adj[a] || []).push([b, w]); (adj[b] = adj[b] || []).push([a, w]); }
+    for (i = 0; i < segs.length; i++) { cuts.push([{ t: 0, p: segs[i][0] }, { t: 1, p: segs[i][1] }]); }
+    for (i = 0; i < segs.length; i++) {
+      for (j = i + 1; j < segs.length; j++) {
+        r = inter(segs[i][0], segs[i][1], segs[j][0], segs[j][1]);
+        if (r) { cuts[i].push({ t: r.t, p: r.p }); cuts[j].push({ t: r.u, p: r.p }); continue; }
+        var pairs = [[i, j], [j, i]], q, e2;
+        for (q = 0; q < 2; q++) { var ia = pairs[q][0], ib = pairs[q][1]; for (e2 = 0; e2 < 2; e2++) { var pr = proj(segs[ia][e2], segs[ib][0], segs[ib][1]); if (pr.d <= TOL) { cuts[ib].push({ t: pr.t, p: pr.q }); joins.push([segs[ia][e2], pr.q]); } } }
+      }
+    }
+    for (i = 0; i < segs.length; i++) { cuts[i].sort(function (a, b) { return a.t - b.t; }); for (j = 1; j < cuts[i].length; j++) { if (dist(cuts[i][j - 1].p, cuts[i][j].p) > 0.5) { edge(node(cuts[i][j - 1].p), node(cuts[i][j].p), dist(cuts[i][j - 1].p, cuts[i][j].p)); } } }
+    for (i = 0; i < joins.length; i++) { edge(node(joins[i][0]), node(joins[i][1]), dist(joins[i][0], joins[i][1])); }
+    function attach(p) {
+      var best = null, k, rr; for (k = 0; k < segs.length; k++) { rr = proj(p, segs[k][0], segs[k][1]); if (!best || rr.d < best.d) { best = { d: rr.d, i: k, t: rr.t, q: rr.q }; } }
+      var n = node(best.q), cs = cuts[best.i], lo = null, hi = null, m;
+      for (m = 0; m < cs.length; m++) { if (cs[m].t <= best.t && (!lo || cs[m].t > lo.t)) { lo = cs[m]; } if (cs[m].t >= best.t && (!hi || cs[m].t < hi.t)) { hi = cs[m]; } }
+      if (lo) { edge(n, node(lo.p), dist(best.q, lo.p)); } if (hi) { edge(n, node(hi.p), dist(best.q, hi.p)); }
+      var s0 = node(p); edge(s0, n, best.d); return s0;
+    }
+    var s = attach(start), t = attach(end), D = {}, prev = {}, done = {}, u, best2, kk, lst, v;
+    D[s] = 0;
+    while (true) {
+      u = null; best2 = Infinity; for (kk in D) { if (D.hasOwnProperty(kk) && !done[kk] && D[kk] < best2) { best2 = D[kk]; u = +kk; } }
+      if (u === null || u === t) { break; }
+      done[u] = true; lst = adj[u] || [];
+      for (v = 0; v < lst.length; v++) { var n2 = lst[v][0], d2 = best2 + lst[v][1]; if (D[n2] === undefined || d2 < D[n2]) { D[n2] = d2; prev[n2] = u; } }
+    }
+    if (D[t] === undefined) { return null; }
+    var pts = [], at = t; while (at !== undefined) { pts.unshift(nodes[at]); if (at === s) { break; } at = prev[at]; }
+    /* drop tiny zig-zags so the line and the steps read cleanly */
+    var clean = [pts[0]]; for (i = 1; i < pts.length; i++) { if (dist(pts[i], clean[clean.length - 1]) > 4) { clean.push(pts[i]); } }
+    return { pts: clean, len: D[t] };
+  }
+
+  /* ---------- drawing ---------- */
+  function el(tag, a) { var e = document.createElementNS(SVGNS, tag), k; for (k in a) { if (a.hasOwnProperty(k)) { e.setAttribute(k, a[k]); } } return e; }
+  var anim = null;
+  function draw() {
+    if (svg && svg.parentNode) { svg.parentNode.removeChild(svg); }
+    clearInterval(anim);
+    var pts = route.pts, str = '', i, total = 0, segL = [];
+    for (i = 0; i < pts.length; i++) { str += (i ? ' ' : '') + pts[i][0].toFixed(1) + ',' + pts[i][1].toFixed(1); if (i) { segL.push(dist(pts[i - 1], pts[i])); total += segL[i - 1]; } }
+    svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, preserveAspectRatio: 'xMidYMid meet' });
+    var under = el('polyline', { points: str, fill: 'none', stroke: '#042d54', 'stroke-width': 72, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', opacity: '0.9', 'stroke-dasharray': total + ' ' + total, 'stroke-dashoffset': total });
+    var core = el('polyline', { points: str, fill: 'none', stroke: '#f9ec31', 'stroke-width': 34, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'stroke-dasharray': total + ' ' + total, 'stroke-dashoffset': total });
+    var flow = el('polyline', { points: str, fill: 'none', stroke: '#ffffff', 'stroke-width': 12, 'stroke-linecap': 'round', 'stroke-dasharray': '8 88', 'class': 'flow' });
+    var dot = el('circle', { r: 52, fill: '#f9ec31', stroke: '#042d54', 'stroke-width': 18, cx: pts[0][0], cy: pts[0][1] });
+    svg.appendChild(under); svg.appendChild(core); svg.appendChild(dot);
+    /* location pin with radar rings at the start */
+    var p0 = pts[0], g = el('g', {});
+    function ring(b) { var c = el('circle', { cx: p0[0], cy: p0[1], r: 40, fill: 'none', stroke: '#25b5f5', 'stroke-width': 16 }); c.appendChild(el('animate', { attributeName: 'r', values: '40;220', dur: '2.4s', begin: b, repeatCount: 'indefinite' })); c.appendChild(el('animate', { attributeName: 'opacity', values: '0.9;0', dur: '2.4s', begin: b, repeatCount: 'indefinite' })); return c; }
+    svg.appendChild(ring('0s')); svg.appendChild(ring('1.2s'));
+    g.appendChild(el('path', { d: 'M' + p0[0] + ' ' + p0[1] + ' c-36 -56 -88 -96 -88 -160 a88 88 0 0 1 176 0 c0 64 -52 104 -88 160z', fill: '#084f94', stroke: '#ffffff', 'stroke-width': 16 }));
+    g.appendChild(el('circle', { cx: p0[0], cy: p0[1] - 160, r: 32, fill: '#ffffff' }));
+    g.appendChild(el('animateTransform', { attributeName: 'transform', type: 'translate', values: '0 0;0 -28;0 0', dur: '1.6s', repeatCount: 'indefinite' }));
+    svg.appendChild(g);
+    $('mapin').appendChild(svg);
+    var dur = Math.max(1800, Math.min(4200, total * 0.62)), t0 = Date.now();
+    function at(f) { var want = f * total, k = 0; while (k < segL.length - 1 && want > segL[k]) { want -= segL[k]; k++; } var a = pts[k], b = pts[k + 1], q = segL[k] ? Math.min(1, want / segL[k]) : 1; return [a[0] + (b[0] - a[0]) * q, a[1] + (b[1] - a[1]) * q]; }
+    anim = setInterval(function () {
+      var f = Math.min(1, (Date.now() - t0) / dur), e = f < 0.5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2, p = at(e);
+      under.setAttribute('stroke-dashoffset', (total * (1 - e)).toFixed(1)); core.setAttribute('stroke-dashoffset', (total * (1 - e)).toFixed(1));
+      dot.setAttribute('cx', p[0].toFixed(1)); dot.setAttribute('cy', p[1].toFixed(1));
+      if (f >= 1) { clearInterval(anim); svg.insertBefore(flow, dot); var end = pts[pts.length - 1]; svg.appendChild(el('circle', { cx: end[0], cy: end[1], r: 64, fill: '#0a6a42', stroke: '#ffffff', 'stroke-width': 20 })); }
+    }, 30);
+    var meters = route.len * C.METERS_PER_UNIT, mins = Math.max(1, Math.round(meters / C.WALK_METERS_PER_MIN));
+    $('meta').innerHTML = esc('About ' + mins + ' min walk, ' + fmtLen(meters));
+  }
+
+  /* ---------- turn-by-turn steps from the route's corners ---------- */
+  var ICON = {
+    start: '<svg viewBox="0 0 24 24" fill="#084f94"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>',
+    left: '<svg viewBox="0 0 24 24" fill="none" stroke="#042d54" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20v-7a3 3 0 0 0-3-3H6"/><path d="M10 6l-4 4 4 4"/></svg>',
+    right: '<svg viewBox="0 0 24 24" fill="none" stroke="#042d54" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20v-7a3 3 0 0 1 3-3h9"/><path d="M14 6l4 4-4 4"/></svg>',
+    straight: '<svg viewBox="0 0 24 24" fill="none" stroke="#042d54" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V4"/><path d="M7 9l5-5 5 5"/></svg>',
+    end: '<svg viewBox="0 0 24 24" fill="none" stroke="#0a6a42" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,12 10,17 19,7"/></svg>'
+  };
+  function steps() {
+    var M = C.METERS_PER_UNIT, SHORT = 2 / M, raw = route.pts, pts = [raw[0]], i, out = [], run = 0;
+    /* ignore tiny jogs (under about 2 m) where two corridors meet slightly offset */
+    for (i = 1; i < raw.length - 1; i++) { if (dist(raw[i], pts[pts.length - 1]) >= SHORT && (dist(raw[i], raw[i + 1]) >= SHORT || i + 1 === raw.length - 1)) { pts.push(raw[i]); } }
+    pts.push(raw[raw.length - 1]);
+    out.push(['start', '<b>Start</b> at the You are here pin']);
+    for (i = 1; i < pts.length; i++) {
+      run += dist(pts[i - 1], pts[i]);
+      if (i < pts.length - 1) {
+        var a = [pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]], b = [pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]];
+        var cross = a[0] * b[1] - a[1] * b[0], dot = a[0] * b[0] + a[1] * b[1], ang = Math.abs(Math.atan2(cross, dot)) * 180 / Math.PI;
+        if (ang < 25) { continue; }
+        var dir = cross > 0 ? 'right' : 'left';   /* screen coordinates: y grows downward */
+        out.push([dir, 'Walk ' + fmtLen(run * M) + ', then <b>turn ' + dir + '</b>']); run = 0;
+      }
+    }
+    if (run * M >= 3) { out.push(['straight', 'Continue ' + fmtLen(run * M)]); }
+    out.push(['end', '<b>Arrive at ' + esc(P.to) + '</b>']);
+    var h = '', k; for (k = 0; k < out.length; k++) { h += '<div class="step"><div class="ico">' + ICON[out[k][0]] + '</div><div>' + out[k][1] + '</div></div>'; }
+    $('steps').innerHTML = h;
+  }
+  $('replay').onclick = function () { if (route) { draw(); } };
+  var full = false;
+  function layoutFull() {
+    var box = $('mapin');
+    if (!full) { box.style.width = ''; box.style.height = ''; box.style.transform = ''; return; }
+    var vw = window.innerWidth, vh = window.innerHeight, ratio = W / H, portrait = vh > vw, w;
+    var availH = vh - 96, availW = vw - 24;   /* leave room for the Replay and Close buttons */
+    if (portrait) { w = Math.min(availH, availW * ratio); box.style.transform = 'rotate(-90deg)'; }
+    else { w = Math.min(availW, availH * ratio); box.style.transform = ''; }
+    box.style.width = Math.floor(w) + 'px'; box.style.height = Math.floor(w / ratio) + 'px';
+  }
+  function setFull(on) {
+    full = on; $('map').className = on ? 'map full' : 'map'; $('fullbar').className = on ? 'fullbar on' : 'fullbar';
+    document.body.style.overflow = on ? 'hidden' : ''; layoutFull(); if (on && route) { draw(); }
+  }
+  $('zoom').onclick = function () { if (route) { setFull(true); } };
+  $('fb-close').onclick = function () { setFull(false); };
+  $('fb-replay').onclick = function () { if (route) { draw(); } };
+  window.addEventListener('resize', layoutFull);
+  window.addEventListener('orientationchange', function () { setTimeout(layoutFull, 250); });
+  document.title = 'Directions to ' + (P.to || '');
+}());
+</script>
+</body>
+</html>
